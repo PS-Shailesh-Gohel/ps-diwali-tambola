@@ -288,11 +288,19 @@ io.on('connection', (socket) => {
   socket.on('player:claim', (payload, ack) => {
     const reply = typeof ack === 'function' ? ack : () => {};
     try {
+      const before = game.state.claims.length;
       const claim = game.claim(socket.data.playerId, payload && payload.prize);
+      const isNew = game.state.claims.length > before;
       reply({ ok: true, claim: { id: claim.id, prize: claim.prize, ticketId: claim.ticketId, status: claim.status } });
-      io.to('hosts').emit('host:claim', claim);
+      if (isNew) {
+        // Pause auto-draw so no new number comes out while the host checks the claim.
+        const paused = !!autoTimer;
+        if (paused) setAuto(false);
+        io.to('hosts').emit('host:claim', { ...claim, autoPaused: paused });
+        io.to('display').to('players').emit('claim:new', { name: claim.playerName, team: claim.team, prizeName: game.state.settings.prizes[claim.prize].name });
+      }
       sendPlayer(socket.data.playerId);
-      broadcastHost();
+      broadcastAll();
     } catch (e) { reply({ ok: false, error: msg(e) }); }
   });
 
@@ -339,14 +347,14 @@ io.on('connection', (socket) => {
   hostCmd('host:claim:reject', ({ id }) => {
     const c = game.rejectClaim(id);
     sendPlayer(c.playerId);
-    broadcastHost();
+    broadcastAll();
   });
   hostCmd('host:claim:bogey', ({ id }) => {
     const c = game.bogeyClaim(id);
     const prizeName = game.state.settings.prizes[c.prize].name;
     io.emit('bogey', { name: c.playerName, team: c.team, prizeName });
     sendPlayer(c.playerId);
-    broadcastHost();
+    broadcastAll();
   });
   hostCmd('host:sales-override', ({ on }) => { game.setSalesOverride(on); broadcastAll(); });
   hostCmd('host:end', () => { setAuto(false); game.endGame(); broadcastAll(); });

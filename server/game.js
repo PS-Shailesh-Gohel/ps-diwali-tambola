@@ -435,6 +435,14 @@ class Game {
       this.save();
       throw new GameError('This claim is no longer valid.');
     }
+    // Whoever completed the prize on the EARLIEST number wins, whatever order the claims arrived in.
+    const earliest = s.claims
+      .filter((x) => x.status === 'pending' && x.valid && x.prize === c.prize)
+      .reduce((m, x) => Math.min(m, x.completedAt), Infinity);
+    if (earliest < c.completedAt) {
+      const first = s.claims.find((x) => x.status === 'pending' && x.valid && x.prize === c.prize && x.completedAt === earliest);
+      throw new GameError(`${first.playerName} completed this prize earlier (on number ${s.draws[earliest]}). Confirm their claim first.`);
+    }
     const prizeName = s.settings.prizes[c.prize].name;
     const group = s.claims.filter((x) => x.status === 'pending' && x.valid && x.prize === c.prize && x.completedAt === c.completedAt);
     const added = group.map((x) => {
@@ -539,7 +547,10 @@ class Game {
       voiceRate: s.settings.voiceRate,
       voiceMode: s.settings.voiceMode,
       autoInterval: s.settings.autoInterval,
-      latestWinners: s.winners.slice(-3)
+      latestWinners: s.winners.slice(-3),
+      // Who is claiming right now (no validity shown, to keep the suspense on the projector)
+      pendingClaims: s.claims.filter((c) => c.status === 'pending')
+        .map((c) => ({ id: c.id, name: c.playerName, team: c.team, prizeName: (s.settings.prizes[c.prize] || {}).name || c.prize }))
     };
   }
 

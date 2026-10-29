@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diwali Tambola – Host</title>
 <link rel="icon" href="/assets/logo.svg">
-<link rel="stylesheet" href="/css/theme.css?v=5">
+<link rel="stylesheet" href="/css/theme.css?v=6">
 <style>
   .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
   .tabs button { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
@@ -45,6 +45,12 @@
   .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
   .login-box { max-width: 420px; margin: 12vh auto; padding: 28px; display: flex; flex-direction: column; gap: 16px; }
   .warnline { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .tab-badge { display: inline-flex; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--bad-strong); color: #3A0A0A; font-size: 12px; font-weight: 700; align-items: center; justify-content: center; }
+  .claim-alert { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 14px; background: #4A2A08; border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(245,184,61,.35); }
+  .claim-alert .t { flex: 1 1 300px; font-size: 15px; }
+  .claim-alert .t b { color: var(--gold-light); font-size: 18px; }
+  .claim-alert.flash { animation: claimFlash 1s ease-in-out 3; }
+  @keyframes claimFlash { 0%,100% { box-shadow: 0 0 30px rgba(245,184,61,.35); } 50% { box-shadow: 0 0 60px 12px rgba(245,184,61,.9); background: #6A3C08; } }
   .okline { background: var(--ok-bg); color: var(--ok); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
 </style>
 </head>
@@ -67,17 +73,18 @@
     <nav class="tabs" role="tablist" aria-label="Host sections">
       <button role="tab" data-tab="setup">Setup &amp; Prizes</button>
       <button role="tab" data-tab="players">Players &amp; Tickets</button>
-      <button role="tab" data-tab="game">Game Control</button>
+      <button role="tab" data-tab="game">Game Control<span class="tab-badge" id="claimBadge" hidden></span></button>
       <button role="tab" data-tab="winners">Winners</button>
     </nav>
     <div class="status"><span class="dot" id="connDot"></span><span id="statusText">Connecting…</span></div>
   </header>
   <div class="toran" aria-hidden="true"></div>
+  <div class="wrap" id="claimAlertWrap" style="padding-bottom:0" hidden><div class="claim-alert" id="claimAlert" role="alert"></div></div>
   <main class="wrap" id="main"></main>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/common.js?v=5"></script>
-<script src="/js/host.js?v=5"></script>
+<script src="/js/common.js?v=6"></script>
+<script src="/js/host.js?v=6"></script>
 </body>
 </html>

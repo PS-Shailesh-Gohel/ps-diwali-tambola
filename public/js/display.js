@@ -77,10 +77,28 @@
     $('#prizes').innerHTML = (state.prizes || []).map((p) => (p.status === 'won'
       ? `<span class="won">${esc(p.name)} · ${esc(p.winners.map((w) => w.name).join(' & '))}</span>`
       : `<span>${esc(p.name)}${p.value ? ' · ' + esc(p.value) : ''} · open</span>`)).join('');
+    renderClaims();
     const wins = (state.prizes || []).filter((p) => p.status === 'won');
     $('#winners').innerHTML = wins.length
       ? wins.slice(-3).reverse().map((p) => `${esc(p.name)} — ${p.winners.map((w) => `${esc(w.name)}${w.team ? ' · ' + esc(w.team) : ''} <span class="mono small">${esc(w.ticketId)}</span>`).join(' & ')}`).join('<br>')
       : 'The first winner will appear here';
+  }
+
+  function renderClaims() {
+    const list = (state && state.pendingClaims) || [];
+    const box = $('#claimBox');
+    box.hidden = !list.length;
+    if (!list.length) return;
+    const who = list.map((c) => `${esc(c.name)}${c.team ? ' · ' + esc(c.team) : ''} — <b>${esc(c.prizeName)}</b>`).join('<br>');
+    box.innerHTML = `<div class="k">Claim!</div><div class="who">${who}</div><div class="s">The host is checking the ticket${list.length > 1 ? 's' : ''}…</div>`;
+  }
+
+  function claimSound() {
+    // a quick dhol-style "dha-dha-DHUM"
+    T.Sound.tone(150, 0.18, 'sine', 0.35);
+    T.Sound.tone(150, 0.18, 'sine', 0.35, 0.2);
+    T.Sound.tone(110, 0.5, 'sine', 0.45, 0.42);
+    T.Sound.tone(660, 0.3, 'triangle', 0.08, 0.42);
   }
 
   async function playDraw(d) {
@@ -117,6 +135,11 @@
   });
   socket.on('public:state', (s) => { state = s; render(); });
   socket.on('drawn', (d) => { queue = queue.then(() => playDraw(d)); });
+  socket.on('claim:new', ({ name, prizeName }) => {
+    claimSound();
+    if (state && state.voice) T.Sound.speak(`Claim! ${name} claims ${prizeName}!`, state.voiceRate || 1, 'male');
+    setTimeout(() => T.restartAnimation($('#claimBox'), 'pop'), 30);
+  });
   socket.on('undo', ({ number }) => { T.toast(`Number ${number} was taken back by the host.`); });
   socket.on('reset', () => { shown = null; freshNumber = null; T.toast('A new round is starting!'); });
   socket.on('winner', ({ winners }) => {

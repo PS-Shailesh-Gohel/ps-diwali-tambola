@@ -236,3 +236,29 @@ test('draws closer together than the coin animation are refused', () => {
   t += 3000;
   assert.doesNotThrow(() => g.draw());
 });
+
+test('two claims at the same time: the one completed on the earlier number must be confirmed first', () => {
+  const { g, p1, p2 } = setup();
+  draw(g, [4, 23, 41, 62, 85]); // Asha's (ticket A) top line completes on 85
+  draw(g, [1]);                 // Ravi's (ticket C) top line completes one number later
+  const late = g.claim(p2.id, 'topLine');   // Ravi happens to claim first
+  const early = g.claim(p1.id, 'topLine');  // Asha claims second
+  assert.equal(late.valid, true);
+  assert.equal(early.valid, true);
+  assert.throws(() => g.confirmClaim(late.id), /Asha completed this prize earlier/);
+  const winners = g.confirmClaim(early.id);
+  assert.equal(winners.length, 1);
+  assert.equal(winners[0].name, 'Asha');
+  assert.equal(g.state.claims.find((c) => c.id === late.id).status, 'rejected');
+});
+
+test('pending claims are visible to the projector without saying whether they are valid', () => {
+  const { g, p1 } = setup();
+  draw(g, [4, 23]);
+  g.claim(p1.id, 'topLine');
+  const pub = g.publicView();
+  assert.equal(pub.pendingClaims.length, 1);
+  assert.equal(pub.pendingClaims[0].name, 'Asha');
+  assert.equal(pub.pendingClaims[0].prizeName, 'Top Line');
+  assert.equal(pub.pendingClaims[0].valid, undefined);
+});

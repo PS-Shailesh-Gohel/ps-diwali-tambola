@@ -269,6 +269,7 @@
       T.toast(`${winners[0].prizeName} won by ${winners.map((w) => w.name).join(' & ')}`, '', 5000);
     });
     socket.on('bogey', ({ name, prizeName }) => { if (me && name !== me.player.name) T.toast(`Bogey! ${name} claimed ${prizeName} too early.`, 'bad', 4000); });
+    socket.on('claim:new', ({ name, prizeName }) => { if (me && name !== me.player.name) T.toast(`${name} is claiming ${prizeName}… the host is checking.`, '', 4000); });
     socket.on('reset', () => T.toast('A new round is starting!', 'ok'));
     socket.on('player:removed', () => { localStorage.removeItem('tambola_token'); token = null; showLogin('Your tickets were removed. Please check with the host.'); });
     socket.on('disconnect', () => T.toast('Reconnecting…', 'bad', 2000));

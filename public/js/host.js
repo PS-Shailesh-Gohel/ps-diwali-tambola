@@ -85,8 +85,34 @@
     renderLive();
   }
 
+  // ---------- claim alerts (visible on every tab) ----------
+  function renderClaimAlert() {
+    const pending = st.claims.filter((c) => c.status === 'pending');
+    const badge = $('#claimBadge');
+    badge.hidden = !pending.length;
+    badge.textContent = pending.length;
+    document.title = pending.length ? `(${pending.length}) Claim${pending.length > 1 ? 's' : ''} waiting – Tambola Host` : 'Diwali Tambola – Host';
+    $('#claimAlertWrap').hidden = !pending.length;
+    if (!pending.length) return;
+    const list = pending.map((c) => `${esc(c.playerName)} – ${esc(prizeName(c.prize))}`).join(' · ');
+    $('#claimAlert').innerHTML = `<svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFD27A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+      <div class="t"><b>${pending.length} claim${pending.length > 1 ? 's' : ''} waiting</b><br>${list}</div>
+      ${tab === 'game' ? '' : '<button class="btn btn-saffron" id="reviewClaims">Review claims</button>'}`;
+    const rb = $('#reviewClaims');
+    if (rb) rb.onclick = () => { tab = 'game'; location.hash = 'game'; renderTab(); };
+  }
+
+  function chime() {
+    T.Sound.tone(880, 0.25, 'triangle', 0.15);
+    T.Sound.tone(1175, 0.3, 'triangle', 0.15, 0.18);
+    T.Sound.tone(1568, 0.45, 'triangle', 0.15, 0.36);
+  }
+  // Browsers only allow sound after a click, so enable it on the host's first click.
+  document.addEventListener('click', () => { if (!T.Sound.enabled) T.Sound.unlock(); }, { once: true });
+
   function renderLive() {
     if (!st) return;
+    renderClaimAlert();
     $('#statusText').textContent = `${st.online.players} players online · ${st.online.displays} projector${st.online.displays === 1 ? '' : 's'} · ${st.draws.length}/90 drawn`;
     if (tab === 'players') livePlayers();
     if (tab === 'game') liveGame();
@@ -279,7 +305,9 @@
     $('#autoInfo').textContent = st.auto ? `Auto-drawing every ${st.settings.autoInterval} seconds` : `Auto-draw interval: ${st.settings.autoInterval} seconds · the coin animation plays on every screen`;
     $('#gChips').innerHTML = st.draws.map((d) => `<span class="num-chip">${d}</span>`).join('') || '<span class="small muted">None yet</span>';
 
-    const pending = st.claims.filter((c) => c.status === 'pending');
+    // Group claims by prize, earliest completion first, so ties and order are obvious.
+    const pending = st.claims.filter((c) => c.status === 'pending')
+      .sort((a, b) => a.prize.localeCompare(b.prize) || (b.valid - a.valid) || ((a.completedAt ?? 999) - (b.completedAt ?? 999)) || (a.at - b.at));
     const done = st.claims.filter((c) => c.status !== 'pending').slice(0, 12);
     const tieOf = (c) => c.valid && pending.filter((x) => x.valid && x.prize === c.prize && x.completedAt === c.completedAt).length > 1;
     const claimHtml = (c) => {
@@ -287,6 +315,12 @@
       if (c.status !== 'pending') {
         const label = { confirmed: '<span class="badge badge-ok">Won</span>', rejected: '<span class="badge badge-quiet">Rejected</span>', bogey: '<span class="badge badge-bad">Bogey</span>' }[c.status];
         return `<div class="claim" style="opacity:.7">${label}${who}<div class="small muted mono">${esc(c.ticketId || '')} ${c.reason ? '· ' + esc(c.reason) : ''}</div></div></div>`;
+      }
+      const earlier = c.valid && pending.find((x) => x.valid && x.prize === c.prize && x.completedAt < c.completedAt);
+      if (earlier) {
+        return `<div class="claim"><span class="badge badge-quiet">Later</span>${who}
+          <div class="small muted">Valid, but ${esc(earlier.playerName)} completed it earlier (on ${st.draws[earlier.completedAt]}). Confirm theirs first; this one closes automatically.</div></div>
+          <button class="btn btn-quiet" data-reject="${c.id}">Reject</button></div>`;
       }
       if (c.valid) {
         const tie = tieOf(c);
@@ -479,7 +513,11 @@
     socket.on('disconnect', () => { $('#connDot').classList.add('off'); $('#statusText').textContent = 'Reconnecting…'; });
     socket.on('host:state', (s) => { st = s; renderLive(); });
     socket.on('host:claim', (c) => {
-      T.toast(`New claim: ${prizeName(c.prize)} by ${c.playerName}${c.valid ? ' (valid)' : ' (not valid)'}`, c.valid ? 'ok' : 'bad', 5000);
+      chime();
+      T.toast(`New claim: ${prizeName(c.prize)} by ${c.playerName}${c.valid ? ' (valid)' : ' (not valid)'}`, c.valid ? 'ok' : 'bad', 6000);
+      if (c.autoPaused) T.toast('Auto-draw paused while you check the claim.', '', 6000);
+      setTimeout(() => T.restartAnimation($('#claimAlert'), 'flash'), 50);
+      if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
     });
     socket.on('drawn', async (d) => {
       if (tab !== 'game' || !$('#gStage')) return;
