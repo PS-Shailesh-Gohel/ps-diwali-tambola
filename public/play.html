@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#140F2E">
+<title>Diwali Tambola – My Tickets</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/theme.css?v=5">
+<style>
+  body { min-height: 100dvh; }
+  .app { max-width: 560px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+  .topbar { padding: 10px 16px; }
+  .logo-badge img { height: 22px; }
+  .me { text-align: right; }
+  .me .n { font-weight: 600; font-size: 14px; }
+  .me .m { font-size: 12px; color: var(--muted); }
+  .strip { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--panel); }
+  .strip .coin-holder { width: 72px; height: 72px; flex: none; perspective: 500px; }
+  .mini-coin { width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFF1B8 0%, #F5C451 38%, #D99A1E 72%, #A8700F 100%); box-shadow: inset 0 0 0 4px rgba(138,90,11,.45), 0 0 18px 4px rgba(245,184,61,.5); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 34px; color: #4A2504; }
+  .mini-coin.empty { background: var(--bg); box-shadow: none; border: 2px dashed var(--line-strong); color: var(--dim); font-size: 22px; }
+  .strip .call { font-size: 13px; font-style: italic; color: var(--gold-text); min-height: 18px; }
+  .last { display: flex; gap: 6px; margin-top: 8px; }
+  .last span { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line-strong); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--soft); }
+  .icon-btn { width: 44px; height: 44px; flex: none; border: 1px solid var(--line-strong); background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gold); }
+  .icon-btn[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); }
+  .tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+  .seg { display: flex; gap: 4px; background: var(--panel); border-radius: 8px; padding: 3px; }
+  .seg button { min-height: 36px; padding: 0 12px; border: 0; background: transparent; color: var(--muted); border-radius: 6px; font: 500 13px var(--body); cursor: pointer; }
+  .seg button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); font-weight: 600; }
+  .tickets { flex: 1; padding: 12px 16px 110px; display: flex; flex-direction: column; gap: 12px; }
+  .ticket-head .ti { font-weight: 600; color: var(--gold); }
+  .pager { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .claimbar { position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); background: var(--header); border-top: 1px solid var(--line); }
+  .claimbar .btn { width: 100%; max-width: 528px; margin: 0 auto; display: flex; min-height: 52px; font-size: 17px; border-radius: 10px; }
+  .sheet-back { position: fixed; inset: 0; z-index: 80; background: rgba(5,3,15,.7); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { width: 100%; max-width: 560px; max-height: 88dvh; overflow: auto; background: var(--panel); border-top: 2px solid var(--gold); border-radius: 20px 20px 0 0; padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+  .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); align-self: center; }
+  .prize-row { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+  .prize-row.ready { border: 2px solid var(--ok); background: var(--ok-bg); box-shadow: 0 0 16px rgba(123,227,166,.25); }
+  .prize-row.closed { background: #2A1433; border-color: transparent; color: var(--muted); }
+  .prize-row .pn { font-weight: 600; }
+  .prize-row .pd { font-size: 12px; color: var(--muted); }
+  .prize-row.ready .pd { color: var(--ok); }
+  .login { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; padding: 24px; }
+  .login h1 { font-size: 34px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo-badge"><img src="/assets/logo.svg" alt="ProductSquads"></div>
+    <div class="me" id="me" hidden><div class="n" id="meName"></div><div class="m" id="meMeta"></div></div>
+  </header>
+  <div class="toran" aria-hidden="true"></div>
+
+  <section class="login" id="loginView" hidden>
+    <h1>Diwali Tambola</h1>
+    <p class="muted" id="loginMsg">Open the personal link the host sent you. Or log in with your Email/Employee ID and the 4-digit PIN.</p>
+    <form id="loginForm" class="panel panel-body" style="display:flex;flex-direction:column;gap:14px">
+      <label class="field">Email or Employee ID<input class="input" name="key" autocomplete="username" required></label>
+      <label class="field">PIN<input class="input" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="one-time-code" required></label>
+      <button class="btn btn-saffron" type="submit" style="min-height:52px;font-size:16px">Show my tickets</button>
+    </form>
+  </section>
+
+  <div id="gameView" hidden>
+    <section class="strip" aria-label="Current number">
+      <div class="coin-holder"><div class="mini-coin empty" id="coin">–</div></div>
+      <div style="flex:1;min-width:0">
+        <div class="call" id="call" aria-live="polite">Waiting for the first number…</div>
+        <div class="last" id="last"></div>
+      </div>
+      <button class="icon-btn" id="soundBtn" aria-label="Sound and number calls" aria-pressed="false">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M19 5a9 9 0 0 1 0 14"></path></svg>
+      </button>
+    </section>
+    <div class="tools">
+      <div class="seg" role="tablist" aria-label="Ticket view">
+        <button role="tab" aria-selected="true" id="viewAll">All tickets</button>
+        <button role="tab" aria-selected="false" id="viewOne">One at a time</button>
+      </div>
+      <label class="check small">Auto-mark <input type="checkbox" id="autoMark"></label>
+    </div>
+    <section class="tickets" id="tickets" aria-label="My tickets"></section>
+    <div class="claimbar"><button class="btn btn-saffron" id="claimBtn">Claim a prize</button></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/common.js?v=5"></script>
+<script src="/js/play.js?v=5"></script>
+</body>
+</html>

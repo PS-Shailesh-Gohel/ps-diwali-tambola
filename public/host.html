@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diwali Tambola – Host</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/theme.css?v=5">
+<style>
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tabs button { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); font: 500 14px var(--body); cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: var(--gold); color: var(--on-gold); font-weight: 600; }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.off { background: var(--bad-strong); box-shadow: none; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  .tile { padding: 14px 16px; }
+  .tile .v { font-family: var(--display); font-size: 32px; color: var(--gold); }
+  .tile.warn { background: var(--bad-bg); border-color: var(--maroon); }
+  .tile.warn .v, .tile.warn .muted { color: var(--bad); }
+  .row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+  .grow { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .side { flex: 1 1 300px; display: flex; flex-direction: column; gap: 14px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dropzone { border: 2px dashed var(--line-strong); border-radius: 12px; padding: 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; padding: 10px 8px; }
+  td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  .scroll-x { overflow-x: auto; }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper output { min-width: 40px; text-align: center; font-family: var(--display); font-size: 24px; color: var(--gold); }
+  .qr-box { display: flex; gap: 12px; align-items: center; background: var(--bg); border-radius: 10px; padding: 12px; }
+  .qr-box img { width: 110px; height: 110px; border-radius: 8px; background: var(--cream); }
+  .draw-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 24px; }
+  .draw-panel .coin-stage { width: 170px; height: 170px; }
+  .draw-panel .num-circle { width: 100%; height: 100%; font-size: 84px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .claim { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--line); }
+  .claim:first-child { border-top: 0; }
+  .claim.bad { background: #2A1433; }
+  .claim .who { flex: 1 1 220px; }
+  .prize-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .prize-card { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+  .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .login-box { max-width: 420px; margin: 12vh auto; padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+  .warnline { background: var(--bad-bg); color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .okline { background: var(--ok-bg); color: var(--ok); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+</style>
+</head>
+<body>
+<section id="loginView" hidden>
+  <form class="panel login-box" id="loginForm">
+    <div class="logo-badge" style="align-self:flex-start"><img src="/assets/logo.svg" alt="ProductSquads"></div>
+    <h1 style="font-size:30px">Diwali Tambola · Host</h1>
+    <label class="field">Host password<input class="input" type="password" name="password" autocomplete="current-password" required autofocus></label>
+    <button class="btn btn-saffron" type="submit">Log in</button>
+  </form>
+</section>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-badge"><img src="/assets/logo.svg" alt="ProductSquads"></div>
+      <span class="brand-title">Diwali Tambola · Host</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Host sections">
+      <button role="tab" data-tab="setup">Setup &amp; Prizes</button>
+      <button role="tab" data-tab="players">Players &amp; Tickets</button>
+      <button role="tab" data-tab="game">Game Control</button>
+      <button role="tab" data-tab="winners">Winners</button>
+    </nav>
+    <div class="status"><span class="dot" id="connDot"></span><span id="statusText">Connecting…</span></div>
+  </header>
+  <div class="toran" aria-hidden="true"></div>
+  <main class="wrap" id="main"></main>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/common.js?v=5"></script>
+<script src="/js/host.js?v=5"></script>
+</body>
+</html>

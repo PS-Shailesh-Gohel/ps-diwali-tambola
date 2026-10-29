@@ -1,0 +1,14 @@
+# One-click deploy on Render (https://render.com) - see README "Put it online"
+services:
+  - type: web
+    name: ps-diwali-tambola
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: HOST_PASSWORD
+        sync: false
+      - key: PUBLIC_URL
+        sync: false

@@ -1,0 +1,6 @@
+Name,Email/Employee ID,Team,Tickets Bought,Paid (Yes/No)
+Employee One,employee.one@productsquads.co,QA,3,Yes
+Employee Two,EMP-1002,Engineering,1,Yes
+Employee Three,EMP-1003,Talent,5,Yes
+Employee Four,EMP-1004,Data Ops,2,No
+Employee Five,EMP-1005,AI Automation,4,Yes

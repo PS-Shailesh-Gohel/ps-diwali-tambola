@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diwali Tambola – Projector</title>
+<link rel="icon" href="/assets/logo.svg">
+<link rel="stylesheet" href="/css/theme.css?v=5">
+<style>
+  body { overflow-x: hidden; }
+  .stage-root { position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar .brand-title { font-size: clamp(22px, 2.4vw, 34px); text-shadow: 0 0 18px rgba(245,184,61,.45); }
+  .stats { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; font-size: 16px; color: var(--muted); }
+  .stats strong { color: var(--cream); }
+  .stats .code { font-family: var(--mono); color: var(--gold); font-size: 20px; }
+  .join-qr { width: 64px; height: 64px; border-radius: 8px; background: var(--cream); }
+  main.d { position: relative; flex: 1; width: 100%; max-width: 1600px; margin: 0 auto; padding: 24px 32px; display: flex; flex-wrap: wrap; gap: 32px; align-items: stretch; }
+  .now { --circle: clamp(180px, 20vw, 300px); flex: 1 1 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; padding: 24px; position: relative; }
+  .now .label { font-size: 15px; color: var(--muted); letter-spacing: .12em; text-transform: uppercase; }
+  .coin-stage { width: var(--circle); height: var(--circle); z-index: 25; }
+  .coin-stage .num-circle { width: 100%; height: 100%; border-width: 6px; font-size: calc(var(--circle) * .52); }
+  .call { font-size: clamp(20px, 2vw, 30px); font-style: italic; color: var(--gold-text); min-height: 40px; max-width: 32ch; }
+  .prev { display: flex; gap: 10px; justify-content: center; min-height: 56px; }
+  .prev span { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--line-strong); display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 26px; color: var(--gold-text); }
+  .right { flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .board { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+  .board div { height: clamp(34px, 4.6vh, 52px); border-radius: 8px; border: 1px solid var(--line); color: var(--dim); display: flex; align-items: center; justify-content: center; font-size: clamp(15px, 1.4vw, 22px); }
+  .board div.on { background: var(--gold); border-color: var(--gold); color: var(--on-gold); font-weight: 700; box-shadow: 0 0 10px 1px rgba(245,184,61,.45); }
+  .board div.fresh { background: var(--gold-light); }
+  .prizes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .prizes span { padding: 8px 14px; border-radius: 999px; font-size: 15px; border: 1px solid var(--line-strong); color: var(--soft); }
+  .prizes span.won { background: var(--maroon); border-color: var(--maroon); color: #FFE3EA; }
+  .winners-strip { border: 2px solid var(--gold); border-radius: 16px; padding: 14px 18px; background: #2A1433; box-shadow: 0 0 30px rgba(245,184,61,.2); min-height: 72px; }
+  .winners-strip .t { font-size: 12px; color: var(--gold-light); text-transform: uppercase; letter-spacing: .1em; }
+  .winners-strip .w { font-family: var(--display); font-size: clamp(18px, 1.8vw, 26px); }
+  .announce { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: rgba(10,6,25,.55); padding: 24px; }
+  .announce .card { text-align: center; padding: 32px 48px; border-radius: 24px; background: var(--panel); border: 3px solid var(--gold); box-shadow: 0 0 80px rgba(245,184,61,.45); max-width: 900px; }
+  .announce .card.bogey { border-color: var(--bad-strong); box-shadow: 0 0 80px rgba(255,138,138,.4); }
+  .announce .k { font-size: 16px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-light); }
+  .announce .prize { font-family: var(--display); color: var(--gold); font-size: clamp(40px, 6vw, 80px); line-height: 1.1; }
+  .announce .who { font-size: clamp(22px, 2.6vw, 36px); margin-top: 8px; }
+  .announce .bogey .prize { color: var(--bad-strong); }
+  .start { position: fixed; inset: 0; z-index: 95; display: flex; flex-direction: column; gap: 18px; align-items: center; justify-content: center; background: var(--bg-deep); text-align: center; padding: 24px; }
+  .start h1 { font-size: clamp(36px, 5vw, 64px); }
+  .corner-tools { position: fixed; right: 12px; bottom: 12px; z-index: 40; display: flex; gap: 8px; opacity: .5; }
+  .corner-tools:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="stage-root" id="root">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo-badge"><img src="/assets/logo.svg" alt="ProductSquads"></div>
+      <span class="brand-title" id="title">Diwali Tambola</span>
+    </div>
+    <div class="stats">
+      <span><strong id="online">0</strong> players online</span>
+      <span><strong id="tickets">0</strong> tickets in play</span>
+      <span>Number <strong id="countTop">0</strong> of 90</span>
+      <img class="join-qr" src="/api/join-qr.png" alt="Scan to open the player page">
+    </div>
+  </header>
+  <div class="toran" aria-hidden="true"></div>
+
+  <main class="d">
+    <section class="now panel" aria-label="Current number">
+      <div class="label" id="label">Waiting for the first number</div>
+      <div class="coin-stage" id="stage">
+        <div class="num-circle" id="circle">–</div>
+      </div>
+      <div class="call" id="call" aria-live="polite"></div>
+      <div>
+        <div class="small muted" style="margin-bottom:8px">Previous numbers</div>
+        <div class="prev" id="prev"></div>
+      </div>
+    </section>
+
+    <section class="right" aria-label="Number board">
+      <div class="board" id="board"></div>
+      <div class="prizes" id="prizes"></div>
+      <div class="winners-strip">
+        <div class="t">Winners</div>
+        <div class="w" id="winners">The first winner will appear here</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="corner-tools">
+  <button class="btn btn-quiet btn-sm" id="testVoice2">Test voice</button>
+  <button class="btn btn-quiet btn-sm" id="soundBtn">Sound on</button>
+  <button class="btn btn-quiet btn-sm" id="fsBtn">Full screen</button>
+</div>
+
+<div class="start" id="start">
+  <div class="logo-badge"><img src="/assets/logo.svg" alt="ProductSquads" style="height:44px"></div>
+  <h1>Diwali Tambola</h1>
+  <p class="muted">Projector screen. Click once to enable sound and the number calls.</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+    <button class="btn btn-ghost" style="min-height:56px;font-size:16px;padding:0 22px" id="testVoices">Test voices</button>
+    <button class="btn btn-saffron" style="min-height:56px;font-size:18px;padding:0 28px" id="startBtn">Start the show</button>
+  </div>
+  <p class="small muted" id="voiceInfo" style="max-width:640px"></p>
+  <p class="small muted" style="max-width:640px">Best Indian voices: open this page in Microsoft Edge (natural voices Prabhat &amp; Neerja). On a Mac, add the voices Rishi and Veena in System Settings → Accessibility → Spoken Content.</p>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/common.js?v=5"></script>
+<script src="/js/display.js?v=5"></script>
+</body>
+</html>
