@@ -357,7 +357,8 @@ io.on('connection', (socket) => {
     broadcastAll();
   });
   hostCmd('host:sales-override', ({ on }) => { game.setSalesOverride(on); broadcastAll(); });
-  hostCmd('host:end', () => { setAuto(false); game.endGame(); broadcastAll(); });
+  hostCmd('host:end', () => { setAuto(false); game.endGame(); io.emit('game:ended'); broadcastAll(); });
+  hostCmd('host:resume', () => { game.resumeGame(); io.emit('game:resumed'); broadcastAll(); });
   hostCmd('host:new-round', () => {
     setAuto(false);
     game.newRound();

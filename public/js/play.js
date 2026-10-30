@@ -15,7 +15,6 @@
   let me = null;    // my tickets, marks, claims
   let view = localStorage.getItem('tambola_view') || 'all';
   let page = 0;
-  let autoMark = null;
   let freshNumber = null;
   let claimStatus = {}; // claimId -> status, to detect changes
   let socket = null;
@@ -58,14 +57,6 @@
     socket.emit('player:mark', { ticketId: tid, number: n, on });
   }
 
-  function autoMarkAll() {
-    if (!autoMark || !me) return;
-    const drawn = drawnSet();
-    me.tickets.forEach((t) => {
-      const marks = markSet(t.id);
-      t.rows.flat().forEach((n) => { if (n && drawn.has(n) && !marks.has(n)) setMark(t.id, n, true); });
-    });
-  }
 
   // ---------- rendering ----------
   function renderHeader() {
@@ -78,22 +69,21 @@
     const draws = pub.draws || [];
     const coin = $('#coin');
     if (pub.current) { coin.classList.remove('empty'); coin.textContent = pub.current; } else { coin.classList.add('empty'); coin.textContent = '–'; }
-    $('#call').textContent = pub.current ? pub.call : 'Waiting for the first number…';
+    $('#call').textContent = pub.status === 'ended' ? 'Game over — thank you for playing!' : (pub.current ? pub.call : 'Waiting for the first number…');
     $('#last').innerHTML = draws.slice(-6, -1).reverse().map((n) => `<span>${n}</span>`).join('');
   }
 
   function ticketHtml(t, idx) {
-    const drawn = drawnSet();
     const marks = markSet(t.id);
     const cells = t.rows.flat().map((n) => {
       if (!n) return '<div class="cell blank"></div>';
       const cls = ['cell'];
       if (marks.has(n)) cls.push('marked');
-      if (drawn.has(n)) cls.push('called');
       if (n === freshNumber && marks.has(n)) cls.push('pop');
       return `<button class="${cls.join(' ')}" data-t="${esc(t.id)}" data-n="${n}" aria-pressed="${marks.has(n)}" aria-label="${n}${marks.has(n) ? ', marked' : ''}">${n}</button>`;
     }).join('');
-    const hint = T.ticketHint(t.rows, drawn, openPrizes());
+    // Hints only count what the player has marked, so they still have to spot the numbers themselves.
+    const hint = T.ticketHint(t.rows, marks, openPrizes());
     return `<article class="ticket">
       <div class="ticket-head"><span class="ti">Ticket ${idx + 1} of ${me.tickets.length}</span><span class="mono muted">${esc(t.id)}</span></div>
       <div class="ticket-grid">${cells}</div>
@@ -148,17 +138,13 @@
     const marked = markSet(tid).has(n);
     if (!marked && !drawnSet().has(n)) { T.toast(`${n} hasn't been called yet.`); return; }
     setMark(tid, n, !marked);
+    freshNumber = marked ? null : n;
     renderTickets();
+    freshNumber = null;
   });
 
   $('#viewAll').addEventListener('click', () => { view = 'all'; localStorage.setItem('tambola_view', view); renderTickets(); });
   $('#viewOne').addEventListener('click', () => { view = 'one'; localStorage.setItem('tambola_view', view); renderTickets(); });
-  $('#autoMark').addEventListener('change', (e) => {
-    autoMark = e.target.checked;
-    localStorage.setItem(`tambola_auto_${me.player.id}`, autoMark ? '1' : '0');
-    autoMarkAll();
-    renderTickets();
-  });
   $('#soundBtn').addEventListener('click', () => {
     if (T.Sound.enabled) T.Sound.enabled = false; else T.Sound.unlock();
     $('#soundBtn').setAttribute('aria-pressed', String(T.Sound.enabled));
@@ -178,7 +164,7 @@
       if (bogeys.has(p.key)) return { p, kind: 'closed', note: 'Blocked after a Bogey' };
       if (p.key === 'fullHouse2' && !fh1Won) return { p, kind: 'open', note: 'Opens after the first Full House', disabled: true };
       let best = null;
-      me.tickets.forEach((t) => { const m = T.missing(t.rows, p.key, drawn); if (!best || m < best.m) best = { m, t }; });
+      me.tickets.forEach((t) => { const m = T.missing(t.rows, p.key, markSet(t.id)); if (!best || m < best.m) best = { m, t }; });
       if (best && best.m === 0) return { p, kind: 'ready', note: `Ready on ${best.t.id}` };
       return { p, kind: 'open', note: best ? `${best.m} away on ${best.t.id}` : '' };
     });
@@ -240,10 +226,6 @@
         me = res.me;
         claimStatus = {};
         (me.claims || []).forEach((c) => { claimStatus[c.id] = c.status; });
-        const saved = localStorage.getItem(`tambola_auto_${me.player.id}`);
-        autoMark = saved === null ? me.tickets.length >= 3 : saved === '1';
-        $('#autoMark').checked = autoMark;
-        autoMarkAll();
         renderAll();
       });
     });
@@ -254,14 +236,10 @@
       if (!pub.draws.includes(d.number)) pub.draws = pub.draws.concat(d.number);
       pub.current = d.number;
       pub.call = d.call;
-      freshNumber = d.number;
-      autoMarkAll();
       renderAll();
       T.restartAnimation($('#coin'), 'coin-flip');
       setTimeout(() => T.Sound.clink(), 900);
       if (T.Sound.enabled) T.Sound.playCall(d, { mode: pub.voiceMode, rate: pub.voiceRate || 1 });
-      if (navigator.vibrate && me.tickets.some((t) => t.rows.flat().includes(d.number))) navigator.vibrate(60);
-      setTimeout(() => { freshNumber = null; }, 1500);
     });
     socket.on('winner', ({ winners }) => {
       if (!winners || !winners.length || !me) return;
@@ -270,7 +248,8 @@
     });
     socket.on('bogey', ({ name, prizeName }) => { if (me && name !== me.player.name) T.toast(`Bogey! ${name} claimed ${prizeName} too early.`, 'bad', 4000); });
     socket.on('claim:new', ({ name, prizeName }) => { if (me && name !== me.player.name) T.toast(`${name} is claiming ${prizeName}… the host is checking.`, '', 4000); });
-    socket.on('reset', () => T.toast('A new round is starting!', 'ok'));
+    socket.on('game:ended', () => T.toast('Game over! Shubh Deepavali — thank you for playing.', 'ok', 8000));
+    socket.on('reset', () => T.toast('A new round is starting! Your tickets are cleared and ready.', 'ok', 6000));
     socket.on('player:removed', () => { localStorage.removeItem('tambola_token'); token = null; showLogin('Your tickets were removed. Please check with the host.'); });
     socket.on('disconnect', () => T.toast('Reconnecting…', 'bad', 2000));
   }

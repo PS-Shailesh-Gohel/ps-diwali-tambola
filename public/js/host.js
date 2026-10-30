@@ -260,7 +260,8 @@
 
   // ================= GAME CONTROL =================
   function gameHtml() {
-    return `<div class="row">
+    return `<div id="gameOver"></div>
+    <div class="row">
       <section class="side" style="flex:1 1 380px">
         <div class="panel draw-panel">
           <div class="small muted" id="gCount"></div>
@@ -272,6 +273,7 @@
             <button class="btn btn-ghost" id="undoBtn">Undo last</button>
             <button class="btn btn-ghost" id="voiceBtn">Mute voice</button>
           </div>
+          <label class="check small" style="align-self:center"><input type="checkbox" id="hostVoice"> Play the caller voice on this screen too</label>
           <div class="small muted" id="autoInfo"></div>
           <div class="actions" style="justify-content:center">
             <a class="btn btn-sm btn-quiet" href="/display" target="_blank" rel="noopener">Open projector screen</a>
@@ -300,6 +302,27 @@
     }
     $('#drawBtn').disabled = drawBlocked();
     $('#drawBtn').textContent = st.status === 'ended' ? 'Game over' : 'Draw next number';
+    $('#endBtn').hidden = st.status === 'ended';
+    const q = `token=${encodeURIComponent(token)}`;
+    $('#gameOver').innerHTML = st.status === 'ended' ? `<section class="panel panel-body" style="border:2px solid var(--gold);display:flex;flex-direction:column;gap:12px">
+        <h2 style="font-size:26px">Game over</h2>
+        <div class="small muted">No more numbers can be drawn. ${st.winners.length} winner${st.winners.length === 1 ? '' : 's'} · ${st.draws.length} numbers drawn. What next?</div>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/api/host/export/results.csv?${q}">Export results CSV</a>
+          <button class="btn btn-saffron" id="goNewRound">Start a new round (same players &amp; tickets)</button>
+          <button class="btn btn-quiet" id="goResume">Undo “End game”</button>
+          <button class="btn btn-bad" id="goReset">Clear everything</button>
+        </div>
+        <div class="small muted">New round clears the numbers, claims and winners on every screen; everyone keeps their tickets and links. Clear everything also deletes all players and tickets.</div>
+      </section>` : '';
+    if (st.status === 'ended') {
+      $('#goNewRound').onclick = async () => { if (confirm('Start a new round? Numbers, claims and winners are cleared on every screen. Players keep their tickets.')) await cmd('host:new-round', {}, 'New round ready — press Draw to start'); };
+      $('#goResume').onclick = () => cmd('host:resume', {}, 'Game resumed');
+      $('#goReset').onclick = async () => {
+        const typed = prompt('This deletes ALL players, tickets and results. Type RESET to confirm.');
+        if (typed === 'RESET') { const ok = await cmd('host:reset', {}, 'Everything was cleared'); if (ok) renderTab(); }
+      };
+    }
     $('#autoBtn').textContent = st.auto ? 'Stop auto' : 'Auto-draw';
     $('#voiceBtn').textContent = st.settings.voice ? 'Mute voice' : 'Voice on';
     $('#autoInfo').textContent = st.auto ? `Auto-drawing every ${st.settings.autoInterval} seconds` : `Auto-draw interval: ${st.settings.autoInterval} seconds · the coin animation plays on every screen`;
@@ -448,6 +471,16 @@
     }
     if (tab === 'game') {
       $('#drawBtn').addEventListener('click', hostDraw);
+      let hv = false;
+      try { hv = localStorage.getItem('tambola_host_voice') === '1'; } catch (e) { /* ignore */ }
+      $('#hostVoice').checked = hv;
+      $('#hostVoice').addEventListener('change', (e) => {
+        try { localStorage.setItem('tambola_host_voice', e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ }
+        if (e.target.checked) {
+          T.Sound.unlock();
+          T.toast('Caller voice on for this screen. Turn it off if the projector is on the same laptop, or you will hear it twice.', 'ok', 6000);
+        }
+      });
       $('#autoBtn').addEventListener('click', () => cmd('host:auto', { on: !st.auto }));
       $('#undoBtn').addEventListener('click', async () => { if (confirm('Take back the last number?')) await cmd('host:undo', {}, 'Last number taken back'); });
       $('#voiceBtn').addEventListener('click', () => cmd('host:settings', { voice: !st.settings.voice }));
@@ -529,6 +562,10 @@
       if (!$('#gCircle')) return;
       $('#gCircle').textContent = d.number;
       T.restartAnimation($('#gCircle'), 'settle');
+      if ($('#hostVoice') && $('#hostVoice').checked && st.settings.voice) {
+        if (!T.Sound.enabled) T.Sound.unlock();
+        T.Sound.playCall(d, { mode: st.settings.voiceMode, rate: st.settings.voiceRate || 1 });
+      }
       renderLive();
       setTimeout(() => { if (tab === 'game' && $('#drawBtn')) $('#drawBtn').disabled = drawBlocked(); }, 400);
     });

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Diwali Tambola – Projector</title>
 <link rel="icon" href="/assets/logo.svg">
-<link rel="stylesheet" href="/css/theme.css?v=6">
+<link rel="stylesheet" href="/css/theme.css?v=10">
 <style>
   body { overflow-x: hidden; }
   .stage-root { position: relative; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
@@ -48,6 +48,13 @@
   @keyframes claimPulse { 0%,100% { box-shadow: 0 0 40px rgba(240,123,29,.35); } 50% { box-shadow: 0 0 70px 14px rgba(240,123,29,.7); } }
   @keyframes claimPop { 0% { transform: translateX(-50%) scale(.6); opacity: 0; } 70% { transform: translateX(-50%) scale(1.06); opacity: 1; } 100% { transform: translateX(-50%) scale(1); } }
   @media (prefers-reduced-motion: reduce) { .claim-box, .claim-box.pop { animation: none; } }
+  .over { position: fixed; inset: 0; z-index: 65; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(10,6,25,.82); }
+  .over .card { width: min(92vw, 1000px); max-height: 90vh; overflow: auto; text-align: center; padding: 32px 40px; border-radius: 24px; background: var(--panel); border: 3px solid var(--gold); box-shadow: 0 0 80px rgba(245,184,61,.4); }
+  .over h1 { font-size: clamp(44px, 6vw, 84px); }
+  .over .sub { font-size: clamp(18px, 2vw, 26px); color: var(--gold-text); margin: 6px 0 22px; }
+  .over table { width: 100%; border-collapse: collapse; font-size: clamp(16px, 1.6vw, 22px); text-align: left; }
+  .over td { padding: 10px 12px; border-top: 1px solid var(--line); }
+  .over td.p { font-family: var(--display); color: var(--gold); }
   .start { position: fixed; inset: 0; z-index: 95; display: flex; flex-direction: column; gap: 18px; align-items: center; justify-content: center; background: var(--bg-deep); text-align: center; padding: 24px; }
   .start h1 { font-size: clamp(36px, 5vw, 64px); }
   .corner-tools { position: fixed; right: 12px; bottom: 12px; z-index: 40; display: flex; gap: 8px; opacity: .5; }
@@ -95,6 +102,7 @@
 </div>
 
 <div class="claim-box" id="claimBox" role="status" aria-live="assertive" hidden></div>
+<div class="over" id="over" hidden><div class="card" id="overCard"></div></div>
 
 <div class="corner-tools">
   <button class="btn btn-quiet btn-sm" id="testVoice2">Test voice</button>
@@ -115,7 +123,7 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/common.js?v=6"></script>
-<script src="/js/display.js?v=6"></script>
+<script src="/js/common.js?v=10"></script>
+<script src="/js/display.js?v=10"></script>
 </body>
 </html>

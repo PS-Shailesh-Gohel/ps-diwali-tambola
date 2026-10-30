@@ -168,7 +168,7 @@
     // Calls a drawn number simply: "62. Sixty-two, a laddoo for you"
     speakCall(d, { mode = 'alternate', rate = 1, queue = false } = {}) {
       if (!this.enabled || !('speechSynthesis' in window)) return;
-      const text = `${d.number}. ${d.call}`;
+      const text = T.spokenCall(d.number, d.call);
       this.say(text, { gender: this.genderForDraw(d.index || 1, mode), rate, queue });
     },
     // ---- Recorded calls (made by "npm run voices", or your own recordings) ----
@@ -315,6 +315,20 @@
     requestAnimationFrame(frame);
   };
 
+  // ---------- spoken call: the number once, then the rest of the rhyme (mirror of server/calls.js) ----------
+  const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+  const englishWord = (n) => (n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : ''));
+  T.spokenCall = (n, call) => {
+    const w = englishWord(Number(n)).replace('-', '[- ]');
+    let rest = String(call || '')
+      .replace(new RegExp(`^${w}\\s*,\\s*`, 'i'), '')
+      .replace(new RegExp(`\\s*,\\s*${w}[.!]?$`, 'i'), '');
+    if (rest) rest = rest.charAt(0).toLowerCase() + rest.slice(1);
+    return rest ? `${n}, ${rest}` : `${n}`;
+  };
+
   // ---------- prize patterns (mirror of server/prizes.js, used for hints only) ----------
   const rn = (row) => row.filter((n) => n > 0);
   const all = (t) => t.flat().filter((n) => n > 0);
@@ -340,10 +354,10 @@
       const m = T.missing(rows, p.key, drawn);
       if (!best || m < best.m) best = { m, p };
     });
-    const called = all(rows).filter((n) => drawn.has(n)).length;
+    const called = all(rows).filter((n) => drawn.has(n)).length; // here "drawn" = the player's marked numbers
     if (best && best.m === 0) return { text: `${best.p.name} complete — claim it!`, cls: 'done' };
     if (best && best.m === 1) return { text: `1 away from ${best.p.name}!`, cls: 'near' };
     if (best && best.m === 2 && best.p.key !== 'fullHouse1' && best.p.key !== 'fullHouse2') return { text: `2 away from ${best.p.name}`, cls: '' };
-    return { text: `${called} of 15 called`, cls: '' };
+    return { text: `${called} of 15 marked`, cls: '' };
   };
 }());

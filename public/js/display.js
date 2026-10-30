@@ -78,10 +78,23 @@
       ? `<span class="won">${esc(p.name)} · ${esc(p.winners.map((w) => w.name).join(' & '))}</span>`
       : `<span>${esc(p.name)}${p.value ? ' · ' + esc(p.value) : ''} · open</span>`)).join('');
     renderClaims();
+    renderOver();
     const wins = (state.prizes || []).filter((p) => p.status === 'won');
     $('#winners').innerHTML = wins.length
       ? wins.slice(-3).reverse().map((p) => `${esc(p.name)} — ${p.winners.map((w) => `${esc(w.name)}${w.team ? ' · ' + esc(w.team) : ''} <span class="mono small">${esc(w.ticketId)}</span>`).join(' & ')}`).join('<br>')
       : 'The first winner will appear here';
+  }
+
+  function renderOver() {
+    const over = $('#over');
+    const ended = state && state.status === 'ended';
+    over.hidden = !ended;
+    if (!ended) return;
+    const rows = (state.prizes || []).map((p) => `<tr><td class="p">${esc(p.name)}</td><td>${p.status === 'won'
+      ? p.winners.map((w) => `${esc(w.name)}${w.team ? ' · ' + esc(w.team) : ''}`).join(' &amp; ') : '<span class="muted">Not won</span>'}</td></tr>`).join('');
+    $('#overCard').innerHTML = `<div class="logo-badge" style="display:inline-flex;margin-bottom:12px"><img src="/assets/logo.svg" alt="ProductSquads" style="height:34px"></div>
+      <h1>Game over!</h1><div class="sub">Shubh Deepavali! Thank you for playing · ${(state.draws || []).length} numbers drawn</div>
+      <table><tbody>${rows}</tbody></table>`;
   }
 
   function renderClaims() {
@@ -141,6 +154,7 @@
     setTimeout(() => T.restartAnimation($('#claimBox'), 'pop'), 30);
   });
   socket.on('undo', ({ number }) => { T.toast(`Number ${number} was taken back by the host.`); });
+  socket.on('game:ended', () => { T.fireworks(6000); if (state && state.voice) T.Sound.speak('Game over! Shubh Deepavali, and thank you for playing!', state.voiceRate || 1, 'male'); });
   socket.on('reset', () => { shown = null; freshNumber = null; T.toast('A new round is starting!'); });
   socket.on('winner', ({ winners }) => {
     queue = queue.then(async () => {

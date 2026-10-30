@@ -262,3 +262,19 @@ test('pending claims are visible to the projector without saying whether they ar
   assert.equal(pub.pendingClaims[0].prizeName, 'Top Line');
   assert.equal(pub.pendingClaims[0].valid, undefined);
 });
+
+test('End game stops draws; resume and new round work', () => {
+  let t = 0;
+  const g = new Game({ now: () => (t += 5000) });
+  g.savePlayer({ name: 'A', key: 'a', bought: 1, paid: true });
+  g.draw();
+  g.endGame();
+  assert.throws(() => g.draw(), /ended/);
+  g.resumeGame();
+  assert.doesNotThrow(() => g.draw());
+  g.endGame();
+  g.newRound();
+  assert.equal(g.state.status, 'setup');
+  assert.equal(g.state.draws.length, 0);
+  assert.equal(Object.keys(g.state.tickets).length, 1); // players keep their tickets
+});

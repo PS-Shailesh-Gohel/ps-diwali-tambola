@@ -4,7 +4,7 @@ A real-time, multiplayer Tambola (Housie) web app for the ProductSquads Diwali c
 
 - **Host screen** (`/host`) – import the roster, generate tickets, draw numbers, confirm claims.
 - **Projector / Teams screen** (`/display`) – the big screen with the animated gold coin, 1–90 board, prizes and winner fireworks.
-- **Player screen** (`/play`) – each person's own tickets on their phone, with auto-mark, "1 away" hints and a Claim button.
+- **Player screen** (`/play`) – each person's own tickets on their phone, where they tap to mark each called number, with "1 away" hints (based on what they've marked) and a Claim button.
 
 Every number arrives as a spinning **Shubh Deepavali gold coin** that lands in the current-number circle, on every screen at the same time.
 

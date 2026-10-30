@@ -129,3 +129,23 @@ const hindiFor = (n) => ({ roman: HINDI_ROMAN[n] || '', dev: HINDI_DEV[n] || '' 
 module.exports.HINDI_ROMAN = HINDI_ROMAN;
 module.exports.HINDI_DEV = HINDI_DEV;
 module.exports.hindiFor = hindiFor;
+
+// ---- What the caller actually says: the number once, then the rest of the rhyme ----
+// "Seventy-nine, one more time" -> "79, one more time"; "Two sparklers lit, seventy-seven" -> "77, two sparklers lit"
+const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+function englishWord(n) {
+  if (n < 20) return ONES[n];
+  return TENS[Math.floor(n / 10)] + (n % 10 ? `-${ONES[n % 10]}` : '');
+}
+function spokenCall(n, call = CALLS[n]) {
+  const w = englishWord(n).replace('-', '[- ]');
+  let rest = String(call || '')
+    .replace(new RegExp(`^${w}\\s*,\\s*`, 'i'), '')
+    .replace(new RegExp(`\\s*,\\s*${w}[.!]?$`, 'i'), '');
+  rest = rest.charAt(0).toLowerCase() === rest.charAt(0) ? rest : rest.charAt(0).toLowerCase() + rest.slice(1);
+  return rest ? `${n}, ${rest}` : `${n}`;
+}
+module.exports.spokenCall = spokenCall;
+module.exports.englishWord = englishWord;

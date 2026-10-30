@@ -14,7 +14,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { CALLS } = require('../server/calls');
+const { spokenCall } = require('../server/calls');
 
 if (process.platform !== 'darwin') {
   console.error('This script uses the Mac "say" command, so run it on a Mac.');
@@ -56,9 +56,9 @@ if (!male && !female) {
 console.log(`Male voice:   ${male ? `${male.name} (${male.lang})` : 'not found - male calls will use the browser voice'}`);
 console.log(`Female voice: ${female ? `${female.name} (${female.lang})` : 'not found - female calls will use the browser voice'}`);
 
-// The original, simple call: "62. Sixty-two, a laddoo for you"
+// The number once, then the rest of the rhyme: "79, one more time"
 function textFor(n) {
-  return `${n}. [[slnc 350]] ${CALLS[n]}`;
+  return spokenCall(n).replace(/^(\d+), /, '$1, [[slnc 250]] ');
 }
 
 const outRoot = path.join(__dirname, '..', 'public', 'audio', 'calls');

@@ -309,6 +309,7 @@ class Game {
   draw() {
     const s = this.s;
     if (s.draws.length >= 90) throw new GameError('All 90 numbers have been drawn.');
+    if (s.status === 'ended') throw new GameError('The game has ended. Start a new round to play again.');
     if (!Object.keys(s.tickets).length) throw new GameError('There are no tickets yet. Add players and generate tickets first.');
     if (this.now() - (s.lastDrawAt || 0) < MIN_DRAW_GAP_MS) throw new GameError('Wait for the coin to land before drawing again.');
     const drawn = new Set(s.draws);
@@ -493,6 +494,13 @@ class Game {
   }
 
   endGame() { this.s.status = 'ended'; this.save(); }
+
+  resumeGame() {
+    if (this.s.status !== 'ended') return;
+    if (this.s.draws.length >= 90) throw new GameError('All 90 numbers have been drawn. Start a new round instead.');
+    this.s.status = this.s.draws.length ? 'running' : 'setup';
+    this.save();
+  }
 
   // ---------- marks ----------
   setMark(playerId, ticketId, number, on) {

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#140F2E">
 <title>Diwali Tambola – My Tickets</title>
 <link rel="icon" href="/assets/logo.svg">
-<link rel="stylesheet" href="/css/theme.css?v=6">
+<link rel="stylesheet" href="/css/theme.css?v=10">
 <style>
   body { min-height: 100dvh; }
   .app { max-width: 560px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
@@ -80,7 +80,7 @@
         <button role="tab" aria-selected="true" id="viewAll">All tickets</button>
         <button role="tab" aria-selected="false" id="viewOne">One at a time</button>
       </div>
-      <label class="check small">Auto-mark <input type="checkbox" id="autoMark"></label>
+      <span class="small muted">Tap a number to mark it</span>
     </div>
     <section class="tickets" id="tickets" aria-label="My tickets"></section>
     <div class="claimbar"><button class="btn btn-saffron" id="claimBtn">Claim a prize</button></div>
@@ -88,7 +88,7 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="/js/common.js?v=6"></script>
-<script src="/js/play.js?v=6"></script>
+<script src="/js/common.js?v=10"></script>
+<script src="/js/play.js?v=10"></script>
 </body>
 </html>
