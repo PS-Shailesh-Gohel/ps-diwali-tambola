@@ -1,0 +1,87 @@
+# azure-pipelines-tambola.yml
+# Builds the Tambola image from this repo's Dockerfile, pushes it to the
+# ps-dev-tambola-ecr-repository created by aws_tambola.tf, then forces a new
+# deployment of ps-dev-tambola-ecs-service so ECS pulls the new image.
+#
+# Requires an AWS service connection in Azure DevOps (Project Settings >
+# Service connections) with the AWS Toolkit for Azure DevOps extension installed.
+
+trigger:
+  branches:
+    include:
+      - main   # adjust to this repo's default branch if different
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  AWS_REGION: 'ap-south-1'
+  ECR_REPOSITORY: 'ps-dev-tambola-ecr-repository'      # aws_ecr_repository.ps_tambola_ecr_repository
+  IMAGE_TAG: '$(Build.BuildId)'
+  ECS_CLUSTER: 'ps-dev-ecs-cluster'                    # shared cluster (aws_ecs_cluster.ps_ecs_cluster)
+  ECS_SERVICE: 'ps-dev-tambola-ecs-service'            # aws_ecs_service.ps_tambola_ecs_service
+
+stages:
+  - stage: Validate
+    jobs:
+      - job: RunTests
+        steps:
+          - task: NodeTool@0
+            displayName: 'Install Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - script: npm ci
+            displayName: 'Install dependencies'
+
+          - script: npm test
+            displayName: 'Run tests'
+
+  - stage: BuildAndPush
+    dependsOn: Validate
+    jobs:
+      - job: BuildPushImage
+        steps:
+          - task: AWSShellScript@1
+            displayName: 'Build and push image to ECR'
+            inputs:
+              awsCredentials: 'aws-ps-dev-connection'   # change to your AWS service connection name
+              regionName: '$(AWS_REGION)'
+              scriptType: 'inline'
+              inlineScript: |
+                set -euo pipefail
+
+                ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+                REGISTRY="$ACCOUNT_ID.dkr.ecr.$(AWS_REGION).amazonaws.com"
+                IMAGE="$REGISTRY/$(ECR_REPOSITORY)"
+
+                aws ecr get-login-password --region $(AWS_REGION) \
+                  | docker login --username AWS --password-stdin "$REGISTRY"
+
+                docker build -t "$IMAGE:$(IMAGE_TAG)" -t "$IMAGE:latest" .
+
+                docker push "$IMAGE:$(IMAGE_TAG)"
+                docker push "$IMAGE:latest"
+
+  - stage: Deploy
+    dependsOn: BuildAndPush
+    jobs:
+      - job: RollEcsService
+        steps:
+          - task: AWSShellScript@1
+            displayName: 'Redeploy ECS service'
+            inputs:
+              awsCredentials: 'aws-ps-dev-connection'
+              regionName: '$(AWS_REGION)'
+              scriptType: 'inline'
+              inlineScript: |
+                set -euo pipefail
+
+                aws ecs update-service \
+                  --cluster $(ECS_CLUSTER) \
+                  --service $(ECS_SERVICE) \
+                  --force-new-deployment
+
+                aws ecs wait services-stable \
+                  --cluster $(ECS_CLUSTER) \
+                  --services $(ECS_SERVICE)
