@@ -242,8 +242,6 @@
       document.body.appendChild(overlay);
     }
     stage.append(burst, coin);
-    Sound.whoosh();
-    setTimeout(() => Sound.clink(), ms * 0.38);
     let finished = false;
     const done = () => {
       if (finished) return;

@@ -238,7 +238,6 @@
       pub.call = d.call;
       renderAll();
       T.restartAnimation($('#coin'), 'coin-flip');
-      setTimeout(() => T.Sound.clink(), 900);
       if (T.Sound.enabled) T.Sound.playCall(d, { mode: pub.voiceMode, rate: pub.voiceRate || 1 });
     });
     socket.on('winner', ({ winners }) => {
