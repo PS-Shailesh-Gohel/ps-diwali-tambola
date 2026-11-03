@@ -201,7 +201,8 @@
       if (has) {
         if (this._audio) { try { this._audio.pause(); } catch (e) { /* ignore */ } }
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        const ok = await this.playFile(`/audio/calls/${folder}/${d.number}.${m.ext || 'm4a'}`);
+        // ?v=<recording time> makes browsers fetch new recordings instead of replaying a saved copy
+        const ok = await this.playFile(`/audio/calls/${folder}/${d.number}.${m.ext || 'm4a'}?v=${encodeURIComponent(m.createdAt || '')}`);
         if (ok) return true;
       }
       this.speakCall(d, { mode: gender, rate });

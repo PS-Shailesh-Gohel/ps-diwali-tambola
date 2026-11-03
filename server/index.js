@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 // Always revalidate pages, scripts and styles so a refresh never runs an old version.
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   extensions: ['html'],
-  setHeaders: (res, file) => { if (/\.(html|js|css)$/.test(file)) res.set('Cache-Control', 'no-cache'); }
+  setHeaders: (res, file) => { if (/\.(html|js|css|json|m4a|mp3)$/.test(file)) res.set('Cache-Control', 'no-cache'); }
 }));
 app.get('/', (req, res) => res.redirect('/play'));
 
